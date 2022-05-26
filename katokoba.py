@@ -1,17 +1,19 @@
 # Libs
 from random import random, choices
 import numpy as np
+import matplotlib.pyplot as plt
 #Global 
 M = 20
 N = 100
 K = 5000
 P = 30
+tmax = 10000
 
 class KatoKoba:
     def __init__(self):
-        self.tmax = 10000
+        self.tmax = tmax
         self.env = Environment()
-        self.agent = Agent()
+        self.agent = Agent(self.tmax)
         # Histories
         self.s_hist = [] # states
         self.a_hist = [] # actions 
@@ -68,7 +70,7 @@ class Environment:
         # generate transition probs
         probs = [self._transition_probs(ixs, action) for ixs in range(len(self.state_db))]
         # select new state
-        new_state_ix = choices(range(P), probs, k=1)
+        new_state_ix = choices(range(P), probs, k=1)[0]
         self.st_ix = new_state_ix
         self.st = np.ravel(self.state_db[new_state_ix])
         return self.rwd, self.st
@@ -117,37 +119,52 @@ class Environment:
 
 class Agent:
     """Represent Immune Network as the learning and decision-making entity"""
-    def __init__(self):
+    def __init__(self, tmax):
         self.K = K
         self.M = M
         self.N = N
-        self.alpha = .02
+        self.alpha = 1e-1
         self.gamma = 0
-        self.beta = 10
+        self.beta_min = 1
+        self.beta_max = 20
+        self.beta = self.beta_min
         self.activities = None
         self.n = np.ones((K,)) # parameter vector
         self.weights = np.random.normal(0, np.sqrt(2/N), (K, N)) # w_kj
         self.intens = np.random.normal(0, np.sqrt(2/K), (M, K)) # u_j
         self.sigmoid = lambda x: 1/(1+np.exp(-x))
-        
+        self.tmax = tmax
         # SARSA Variables
         self.current_state = None
         self.current_action = None
         self.rwd = None
         self.next_state = None
         self.next_action = None
+        self.t = 0
         
     def update(self, sarsa):
         # read state transition
         self.current_state, self.current_action, self.rwd, self.next_state, self.next_action = sarsa
         # perform gradient descent step
         self._gd_step()
-        
+        self.t += 1
+        self._beta_update()
+    
+    def _beta_update(self):
+        """Linear update of expl. param"""
+        self.beta = self.t*(self.beta_max - self.beta_min)/self.tmax + self.beta_min
+        # print(self.beta)
+    
     def _gd_step(self):
         """Perform GD step on running SARSA variables"""
         grad_1 = (self.rwd + self.gamma*self._q_approx(self.next_state, self.next_action) -\
                 self._q_approx(self.current_state, self.current_action))
-        features = self._compute_activities(self.current_state).dot(self.intens.T).dot(self.current_action)
+        features = self._compute_activities(self.current_state)*((self.intens.T).dot(self.current_action))
+        #print("Grad1: ", grad_1) # returns float
+# =============================================================================
+#         print("Features: ", type(features)) # returns np.float64
+#         print()
+# =============================================================================
         gradient = features * grad_1 # vector gradient
         self.n *= (1 + self.alpha*gradient)
         # repair
@@ -155,7 +172,7 @@ class Agent:
         
     def policy(self, state):
         action = np.zeros((M,))
-        probs = self.sigmoid(self.intens.dot(self._compute_activities(state) * self.n))
+        probs = self.sigmoid(self.beta*self.intens.dot(self._compute_activities(state) * self.n))
         thresholds = np.random.rand(M)
         action[thresholds < probs] = 1
         return action
@@ -166,8 +183,10 @@ class Agent:
     
     def _q_approx(self, state, action):
         """Return an estimate of Q-function parametrized by n"""
-        features = self._compute_activities(state).dot(self.intens.T).dot(action)
+        features = self._compute_activities(state)*((self.intens.T).dot(action))
+        #print(features.shape)
         q_approx = self.n.dot(features)
+        #print("Features", type(features))
         return q_approx
     
     def _activity(self, k, state):
@@ -175,10 +194,14 @@ class Agent:
         stimulus = self.weights[k].dot(state)
         return self.sigmoid(stimulus)
     
-    
+iterrs = 1
+r_hists = np.zeros((iterrs, tmax))
 if __name__ == '__main__':
-    model = KatoKoba()
-    model.run()
-        
+    for iterr in range(iterrs):
+        model = KatoKoba()
+        model.run()
+        r_hist = model.r_hist[:]
+        n = model.agent.n
+        r_hists[iterr, :] = r_hist
         
         
