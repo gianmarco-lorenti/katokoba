@@ -8,7 +8,7 @@ M = 20
 N = 100
 K = 5000
 P = 30
-tmax = int(5e4)
+tmax = int(1e5)
 
 class KatoKoba:
     def __init__(self):
@@ -195,18 +195,3 @@ class Agent:
         stimulus = self.weights[k].dot(state)
         return self.sigmoid(stimulus)
     
-iterrs = 1
-r_hists = np.zeros((iterrs, tmax))
-if __name__ == '__main__':
-    for iterr in range(iterrs):
-        model = KatoKoba()
-        model.run()
-        r_hist = model.r_hist[:]
-        n = model.agent.n
-        r_hists[iterr, :] = r_hist
-        print(iterr)
-        
-# data = pd.DataFrame(r_hists)
-# data.to_csv("r_hists_{}.csv".format(iterrs), sep=';')
-rwds = np.mean(r_hists, axis=0)
-plt.plot(rwds)

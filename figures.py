@@ -7,9 +7,12 @@ Created on Mon May 30 09:44:18 2022
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 #%%
 # file setup
+basepath = Path(__file__).parent
+output = "Output"
 filename = "katokoba_100.csv"
 # plot setup
 step_norm = 1e4 #step normalisation in plot
@@ -19,7 +22,7 @@ fgs = (12, 10) #figure size (inch)
 fts = 30 #fontsize
 #%%
 # input data
-data = pd.read_csv(filename,
+data = pd.read_csv(basepath/output/filename,
                    sep=';')
 rwds = data.values[:,1:]
 #%%
