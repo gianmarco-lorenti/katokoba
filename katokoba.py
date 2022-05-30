@@ -2,12 +2,13 @@
 from random import random, choices
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 #Global 
 M = 20
 N = 100
 K = 5000
 P = 30
-tmax = 10000
+tmax = int(5e4)
 
 class KatoKoba:
     def __init__(self):
@@ -38,8 +39,8 @@ class KatoKoba:
             # Perform Update
             SARSA = (current_state, current_action, current_reward, next_state, next_action)
             self.agent.update(SARSA)
-            if t % 100 == 0:
-                print(t)
+            # if t % 100 == 0:
+                # print(t)
             
             
 
@@ -124,7 +125,7 @@ class Agent:
         self.M = M
         self.N = N
         self.alpha = 1e-1
-        self.gamma = 0
+        self.gamma = 0.75
         self.beta_min = 1
         self.beta_max = 20
         self.beta = self.beta_min
@@ -203,5 +204,9 @@ if __name__ == '__main__':
         r_hist = model.r_hist[:]
         n = model.agent.n
         r_hists[iterr, :] = r_hist
+        print(iterr)
         
-        
+# data = pd.DataFrame(r_hists)
+# data.to_csv("r_hists_{}.csv".format(iterrs), sep=';')
+rwds = np.mean(r_hists, axis=0)
+plt.plot(rwds)
