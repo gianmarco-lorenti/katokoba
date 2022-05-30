@@ -17,23 +17,27 @@ class KatoKoba:
         self.agent = Agent(self.tmax)
         # Histories
         self.s_hist = [] # states
+        self.si_hist = [] # state indices 
         self.a_hist = [] # actions 
         self.r_hist = [] # rwds
         
     def run(self):
-        next_state, next_action = None, None
+        next_state, next_state_i, next_action = None, None, None
         for t in range(self.tmax):
             if t == 0:
-                current_state = self.env.initial_state()
+                current_state, current_state_i = self.env.initial_state()
                 # Agent reads state, responds
                 current_action = self.agent.policy(current_state)
             else:
                 current_state = next_state
+                current_state_i = next_state_i
                 current_action = next_action
             self.s_hist.append(current_state)
+            self.si_hist.append(current_state_i)
             self.a_hist.append(current_action)
             # Agent reads state, responds
-            current_reward, next_state = self.env.update(current_action)
+            current_reward, next_state, next_state_i = \
+                self.env.update(current_action)
             self.r_hist.append(current_reward)
             next_action = self.agent.policy(next_state)
             # Perform Update
@@ -62,7 +66,7 @@ class Environment:
         ran_ix = int(random()*self.P)
         self.st_ix = ran_ix
         self.st = np.ravel(self.state_db[ran_ix])
-        return np.ravel(self.state_db[ran_ix])
+        return np.ravel(self.state_db[ran_ix]), ran_ix
    
     def update(self, action):
         """Update state, return reward and new state"""
@@ -74,7 +78,7 @@ class Environment:
         new_state_ix = choices(range(P), probs, k=1)[0]
         self.st_ix = new_state_ix
         self.st = np.ravel(self.state_db[new_state_ix])
-        return self.rwd, self.st
+        return self.rwd, self.st, self.st_ix
     
     def _gen_db(self):
         count = 0
@@ -194,4 +198,16 @@ class Agent:
         """Compute and return cytokine activity of type-k cells on state"""
         stimulus = self.weights[k].dot(state)
         return self.sigmoid(stimulus)
+    
+
+if __name__ == '__main__':
+    model = KatoKoba()
+    model.run()
+    r_hist = model.r_hist[:]
+    n = model.agent.n
+        
+# # data = pd.DataFrame(r_hists)
+# # data.to_csv("r_hists_{}.csv".format(iterrs), sep=';')
+# rwds = np.mean(r_hists, axis=0)
+# plt.plot(rwds)
     

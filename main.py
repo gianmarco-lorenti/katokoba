@@ -23,6 +23,8 @@ model.run()
 r_hist = model.r_hist[:] #reward history
 n = model.agent.n #th-clones size distribution at stationary
 
+# %%
+# main more shots
 # iterrs = 1
 # r_hists = np.zeros((iterrs, tmax))
 # if __name__ == '__main__':
